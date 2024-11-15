@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>キーボード楽器</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            background-image: url('works/background.tiff');
+            background-size: 100% 100%;
+            background-position: center;
+            flex-direction: column;
+            text-align: center;
+            overflow: hidden;  /* 画面をはみ出したアニメーションの隠蔽 */
+            cursor: none;  /* カーソルを非表示にする */
+        }
+
+        .noteImg {
+            position: absolute;
+            opacity: 1;
+            z-index: 4;
+        }
+
+        .falling {
+            animation: fall 2s ease-in forwards;
+        }
+
+        @keyframes fall {
+            0% {
+                top: 0;
+                opacity: 1;
+            }
+            100% {
+                top: 85vh; /* 画面のほぼ下に落ちる */
+            }
+        }
+
+        #violinist {
+            position: absolute;
+            width: 500px;
+            height: auto;
+            left: 50%;
+            bottom: 12vh;
+            transform: translateX(-50%);
+            z-index: 2;
+        }
+
+        #follow-image, #follow-image2 {
+            position: absolute;
+            bottom: 235px;
+            pointer-events: none;
+            transition: left 0.1s ease-out, top 0.1s ease-out;
+            width: 500px;
+            height: 700px;
+        }
+
+        #follow-image {
+            z-index: 1;
+        }
+
+        #follow-image2 {
+            z-index: 3;
+        }
+    </style>
+</head>
+<body>
+    <!-- 左上に配置する画像 -->
+    <img id="top-left-image" src="left/left_top.png" alt="Left Top Image">
+    
+    <!-- 右上に配置する画像 -->
+    <img id="top-right-image" src="right/right_top.png" alt="Right Top Image">
+    
+    <!-- バイオリニストの画像 -->
+    <img id="violinist" src="site/violinist.png" alt="Violinist">
+    
+    <!-- マウスの移動距離に応じて左右に往復する画像 -->
+    <img id="follow-image" src="hand/han.png" alt="マウスの移動距離に応じて往復する画像">
+    
+    <!-- 新しい画像 han2.png を追加 -->
+    <img id="follow-image2" src="hand/han2.png" alt="マウスの移動距離に応じて往復する画像2">
+
+    <script>
+        const notes = {
+            'Q': 'C4', 'W': 'D4', 'E': 'E4', 'R': 'F4', 'T': 'G4',
+            'Y': 'A4', 'U': 'B4', 'I': 'F5', 'O': 'D5', 'P': 'E5',
+            'A': 'F5', 'S': 'G5', 'D': 'A5', 'F': 'B5', 'G': 'C6',
+            'H': 'D6', 'J': 'E6', 'K': 'A6', 'L': 'G6', 'Z': 'A6',
+            'X': 'B6', 'C': 'C7', 'V': 'D7', 'B': 'E7', 'N': 'F7', 
+            'M': 'G7'
+        };
+
+        const noteSizes = {
+            'C4': 50, 'D4': 90, 'E4': 70, 'F4': 100, 'G4': 90,
+            'A4': 100, 'B4': 120, 'F5': 60, 'D5': 65, 'E5': 70,
+            'G5': 60, 'A5': 80, 'B5': 80, 'C6': 100, 'D6': 100,
+            'E6': 150, 'A6': 50, 'G6': 45, 'B6': 160, 'C7': 100,
+            'D7': 130, 'E7': 60, 'F7': 90, 'G7': 85
+        };
+
+        const activeAudios = {};
+        let leftMouseDown = false;
+        const violinist = document.getElementById("violinist");
+
+        // 音を再生する関数
+        function playSound(note) {
+            const audio = new Audio(`sounds/${note}.wav`);
+            audio.loop = true;
+            audio.play();
+            activeAudios[note] = audio;
+        }
+
+        // 音を止める関数
+        function stopSound(note) {
+            if (activeAudios[note]) {
+                activeAudios[note].pause();
+                activeAudios[note].currentTime = 0;
+                delete activeAudios[note];
+            }
+        }
+
+        // 画像をランダムな位置に表示して落下させる関数
+        function dropImageAtLocation(x, y) {
+            const randomNote = Object.keys(notes)[Math.floor(Math.random() * Object.keys(notes).length)];
+            const noteSize = noteSizes[notes[randomNote]] || 50;  // サイズ取得
+
+            // 音符画像の作成
+            const noteImage = document.createElement("img");
+            noteImage.src = `images/${notes[randomNote]}.png`; // 対応する音符画像
+            noteImage.className = "noteImg";
+            noteImage.style.width = `${noteSize}px`;
+            noteImage.style.height = `${noteSize}px`;
+            noteImage.style.left = `${x - noteSize / 2}px`;  // タップ位置に画像を配置
+            noteImage.style.top = `${y - noteSize / 2}px`;
+
+            document.body.appendChild(noteImage);
+
+            // 落下アニメーション
+            setTimeout(() => {
+                noteImage.classList.add("falling");
+            }, 50);
+            
+            // 音再生
+            playSound(notes[randomNote]);
+        }
+
+        // 画面がタップされたとき
+        document.addEventListener('mousedown', (event) => {
+            const x = event.clientX;
+            const y = event.clientY;
+
+            dropImageAtLocation(x, y);
+        });
+
+        // マウスが押された時
+        document.addEventListener('mousedown', (event) => {
+            if (event.button === 0) {
+                leftMouseDown = true;
+            }
+        });
+
+        // マウスが離された時
+        document.addEventListener('mouseup', (event) => {
+            if (event.button === 0) leftMouseDown = false;
+        });
+    </script>
+</body>
+</html>
